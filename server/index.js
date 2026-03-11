@@ -69,6 +69,25 @@ app.get('/api/lab-tests', (req, res) => {
   res.json(filtered);
 });
 
+app.post('/api/lab-tests', (req, res) => {
+  const { patientId, patientName, test, priority, orderedBy } = req.body;
+  if (!patientId || !test) return res.status(400).json({ message: 'patientId and test are required' });
+  const newTest = {
+    id: 'LAB' + Date.now(),
+    patientId,
+    patientName: patientName || 'Unknown',
+    test,
+    orderedBy: orderedBy || 'Unknown Doctor',
+    priority: priority || 'Routine',
+    status: 'Pending',
+    timeOrdered: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    date: new Date().toISOString().split('T')[0],
+    results: null,
+  };
+  labTests.push(newTest);
+  res.json(newTest);
+});
+
 app.post('/api/lab-tests/:id/results', (req, res) => {
   const test = labTests.find(t => t.id === req.params.id);
   if (!test) return res.status(404).json({ message: 'Test not found' });

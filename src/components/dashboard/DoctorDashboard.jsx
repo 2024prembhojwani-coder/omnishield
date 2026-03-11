@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { Users, Calendar, FileText, AlertTriangle, TrendingUp, QrCode, ChevronDown, ChevronUp, Search, Plus, Trash2, CheckCircle } from 'lucide-react'
+import { Users, Calendar, FileText, AlertTriangle, TrendingUp, QrCode, ChevronDown, ChevronUp, Search, Plus, FlaskConical, CheckCircle } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import { api } from '../../utils/api.js'
@@ -25,6 +25,8 @@ const TREND_DATA = [
   { day: 'Wed', consultations: 15 }, { day: 'Thu', consultations: 22 },
   { day: 'Fri', consultations: 20 }, { day: 'Sat', consultations: 8 },
 ]
+
+const LAB_TEST_OPTIONS = ['CBC', 'LFT', 'HbA1c', 'Troponin I', 'X-Ray Chest', 'MRI Brain', 'ABG', 'D-Dimer', 'Lipid Profile', 'Thyroid Panel', 'Urinalysis', 'FBS', 'KFT', 'Coagulation Profile']
 
 const statusColor = {
   Stable: 'bg-green-100 text-green-700',
@@ -52,6 +54,10 @@ export default function DoctorDashboard() {
   const [rxSubmitted, setRxSubmitted] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [rxError, setRxError] = useState(null)
+  const [showLabForm, setShowLabForm] = useState(false)
+  const [lab, setLab] = useState({ patientId: '', test: '', priority: 'Routine' })
+  const [labSubmitted, setLabSubmitted] = useState(false)
+  const [labError, setLabError] = useState(null)
 
   useEffect(() => {
     api.get('/patients').then(setPatients).catch(() => {})
@@ -99,6 +105,25 @@ export default function DoctorDashboard() {
       setTimeout(() => { setRxSubmitted(false); setShowRxForm(false); setRx({ patientId: '', drug: '', dosage: '', frequency: '', duration: '' }) }, 2000)
     } catch {
       setRxError('Failed to submit prescription. Please try again.')
+    }
+  }
+
+  const submitLabTest = async (e) => {
+    e.preventDefault()
+    setLabError(null)
+    const patient = patients.find(p => p.id === lab.patientId)
+    try {
+      await api.post('/lab-tests', {
+        patientId: lab.patientId,
+        patientName: patient?.name || 'Unknown',
+        test: lab.test,
+        priority: lab.priority,
+        orderedBy: user?.name,
+      })
+      setLabSubmitted(true)
+      setTimeout(() => { setLabSubmitted(false); setShowLabForm(false); setLab({ patientId: '', test: '', priority: 'Routine' }) }, 2000)
+    } catch {
+      setLabError('Failed to order lab test. Please try again.')
     }
   }
 
@@ -338,6 +363,59 @@ export default function DoctorDashboard() {
             {rxError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">{rxError}</div>}
             <button type="submit" className="btn-accent w-full py-2">
               {rxSubmitted ? '✓ Prescription Submitted!' : 'Submit Prescription'}
+            </button>
+          </form>
+        )}
+      </div>
+      {/* Order Lab Test */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <FlaskConical className="w-5 h-5 text-[#0d9488]" />
+            <h2 className="section-title mb-0">Order Lab Test</h2>
+          </div>
+          <button onClick={() => setShowLabForm(v => !v)} className="btn-primary text-sm px-3 py-1.5">
+            {showLabForm ? 'Close' : <><Plus className="w-4 h-4 inline mr-1" />New Lab Order</>}
+          </button>
+        </div>
+        {showLabForm && (
+          <form onSubmit={submitLabTest} className="space-y-3 border-t pt-4">
+            <div className="grid sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Patient</label>
+                <select required className="input-field" value={lab.patientId} onChange={e => setLab(v => ({ ...v, patientId: e.target.value }))}>
+                  <option value="">Select patient</option>
+                  {patients.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Test Name</label>
+                <input
+                  required
+                  className="input-field"
+                  placeholder="e.g. CBC, HbA1c, X-Ray Chest"
+                  list="lab-test-options"
+                  value={lab.test}
+                  onChange={e => setLab(v => ({ ...v, test: e.target.value }))}
+                />
+                <datalist id="lab-test-options">
+                  {LAB_TEST_OPTIONS.map(t => (
+                    <option key={t} value={t} />
+                  ))}
+                </datalist>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Priority</label>
+                <select className="input-field" value={lab.priority} onChange={e => setLab(v => ({ ...v, priority: e.target.value }))}>
+                  <option value="Routine">Routine</option>
+                  <option value="Urgent">Urgent</option>
+                  <option value="Stat">Stat</option>
+                </select>
+              </div>
+            </div>
+            {labError && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">{labError}</div>}
+            <button type="submit" className="btn-accent w-full py-2 flex items-center justify-center gap-2">
+              {labSubmitted ? <><CheckCircle className="w-4 h-4" />Lab Test Ordered!</> : 'Submit Lab Order'}
             </button>
           </form>
         )}
