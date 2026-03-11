@@ -42,7 +42,7 @@ const statusIcon = {
 export default function ComplianceChecklist() {
   const allItems = checklist.flatMap(c => c.items)
   const passed = allItems.filter(i => i.status === 'Pass').length
-  const score = Math.round((passed / allItems.length) * 100)
+  const score = allItems.length > 0 ? Math.round((passed / allItems.length) * 100) : 0
 
   return (
     <div className="card">

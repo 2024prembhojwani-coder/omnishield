@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { simulateSIR } from '../../utils/helpers.js'
 
+const CHART_DOWNSAMPLE_INTERVAL = 3 // Show every Nth day for chart readability
+
 export default function SIRModel() {
   const [R0, setR0] = useState(2.5)
   const [gamma, setGamma] = useState(0.1)
@@ -10,8 +12,7 @@ export default function SIRModel() {
 
   const data = useMemo(() => {
     const raw = simulateSIR({ R0, gamma, N, I0: 100, days })
-    // Downsample to every 3rd day for chart readability
-    return raw.filter((_, i) => i % 3 === 0).map(d => ({
+    return raw.filter((_, i) => i % CHART_DOWNSAMPLE_INTERVAL === 0).map(d => ({
       day: d.day,
       Susceptible: Math.round(d.S / 1000),
       Infected:    Math.round(d.I / 1000),

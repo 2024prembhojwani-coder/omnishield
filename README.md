@@ -2,7 +2,7 @@
 
 > **India's most advanced health surveillance and clinical decision support platform**, unifying decentralized health cards, real-time epidemic monitoring, federated learning, and AI-powered CDSS in a single full-stack web application.
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](#)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/2024prembhojwani-coder/omnishield/actions)
 [![FHIR](https://img.shields.io/badge/FHIR-R4%20Compliant-blue)](#)
 [![Compliance](https://img.shields.io/badge/compliance-HIPAA%20%7C%20GDPR%20%7C%20NDHM-teal)](#)
 [![License](https://img.shields.io/badge/license-MIT-gray)](#)
