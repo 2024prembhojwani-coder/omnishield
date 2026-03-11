@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Heart, Activity, Thermometer, Droplet, Calendar, FlaskConical, AlertCircle, CheckCircle } from 'lucide-react'
 import { QRCodeSVG } from 'qrcode.react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
@@ -39,6 +39,15 @@ export default function PatientDashboard() {
     allergies: ['Penicillin', 'Sulfa'],
     emergency: 'Reena Sharma (+91-9876543211)',
   }
+
+  const patientQRValue = useMemo(() => JSON.stringify({
+    type: 'OMNISHIELD_PATIENT',
+    patientId: patient.id || 'P001',
+    name: patient.name,
+    abhaId: patient.abhaId,
+    blood: patient.blood,
+    timestamp: new Date().toISOString(),
+  }), [patient.id, patient.name, patient.abhaId, patient.blood])
 
   useEffect(() => {
     const pid = 'P001'
@@ -105,7 +114,7 @@ export default function PatientDashboard() {
             </div>
           </div>
           <div className="bg-white p-3 rounded-xl self-start">
-            <QRCodeSVG value={JSON.stringify({ id: 'P001', name: patient.name, abha: patient.abhaId, blood: patient.blood })} size={96} />
+            <QRCodeSVG value={patientQRValue} size={96} />
             <div className="text-gray-500 text-xs text-center mt-1">Scan for record</div>
           </div>
         </div>

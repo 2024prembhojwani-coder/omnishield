@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from 'react'
-import { Users, Calendar, FileText, AlertTriangle, TrendingUp, QrCode, ChevronDown, ChevronUp, Search, Plus, FlaskConical, CheckCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { Users, Calendar, FileText, AlertTriangle, TrendingUp, QrCode, ChevronDown, ChevronUp, Search, Plus, FlaskConical } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuth } from '../../contexts/AuthContext.jsx'
 import { api } from '../../utils/api.js'
-import { addPendingRecord } from '../../utils/offlineDB.js'
+import QRScanner from '../QRScanner.jsx'
 
 const MOCK_PATIENTS = [
   { id: 'P001', name: 'Amit Sharma', age: 42, condition: 'Hypertension', blood: 'B+', allergies: ['Penicillin'], status: 'Stable', abhaId: 'ABHA-12345-67890', vitals: { bp: '138/88', hr: 76, spo2: 97, temp: 98.4 } },
@@ -47,12 +47,10 @@ export default function DoctorDashboard() {
   const [appointments, setAppointments] = useState(MOCK_APPOINTMENTS)
   const [search, setSearch] = useState('')
   const [expandedPatient, setExpandedPatient] = useState(null)
-  const [scanToast, setScanToast] = useState(null)
   const [scannedPatient, setScannedPatient] = useState(null)
   const [showRxForm, setShowRxForm] = useState(false)
   const [rx, setRx] = useState({ patientId: '', drug: '', dosage: '', frequency: '', duration: '' })
   const [rxSubmitted, setRxSubmitted] = useState(false)
-  const [scanning, setScanning] = useState(false)
   const [rxError, setRxError] = useState(null)
   const [showLabForm, setShowLabForm] = useState(false)
   const [lab, setLab] = useState({ patientId: '', test: '', priority: 'Routine' })
@@ -68,33 +66,6 @@ export default function DoctorDashboard() {
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.condition.toLowerCase().includes(search.toLowerCase())
   )
-
-  const simulateScan = useCallback(async () => {
-    setScanning(true)
-    await new Promise(r => setTimeout(r, 1500))
-    const simulatedPatientId = 'P001'
-    const scanData = {
-      patientId: simulatedPatientId,
-      timestamp: new Date().toISOString(),
-      geolocation: { lat: 12.9716, lng: 77.5946 },
-    }
-    try {
-      const res = await api.post('/patients/scan', scanData)
-      setScannedPatient(res.patient || MOCK_PATIENTS.find(p => p.id === simulatedPatientId))
-      setScanToast({ type: 'success', msg: 'Patient scanned successfully!' })
-    } catch (err) {
-      if (!navigator.onLine || err.offline) {
-        await addPendingRecord('pendingScans', scanData)
-        setScannedPatient(MOCK_PATIENTS.find(p => p.id === simulatedPatientId))
-        setScanToast({ type: 'offline', msg: 'Saved offline — will sync when connected' })
-      } else {
-        setScanToast({ type: 'error', msg: 'Scan failed. Please try again.' })
-      }
-    } finally {
-      setScanning(false)
-      setTimeout(() => setScanToast(null), 4000)
-    }
-  }, [])
 
   const submitPrescription = async (e) => {
     e.preventDefault()
@@ -157,46 +128,7 @@ export default function DoctorDashboard() {
           <QrCode className="w-5 h-5 text-[#0d9488]" />
           <h2 className="section-title mb-0">Scan Patient QR</h2>
         </div>
-        <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <button
-            onClick={simulateScan}
-            disabled={scanning}
-            className="btn-accent flex items-center gap-2 px-6 py-2.5"
-          >
-            <QrCode className="w-4 h-4" />
-            {scanning ? 'Scanning...' : 'Scan Patient QR Code'}
-          </button>
-          {scanToast && (
-            <div className={`px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 ${
-              scanToast.type === 'success' ? 'bg-green-100 text-green-800' :
-              scanToast.type === 'offline' ? 'bg-yellow-100 text-yellow-800' :
-              'bg-red-100 text-red-800'
-            }`}>
-              {scanToast.type === 'success' && <CheckCircle className="w-4 h-4" />}
-              {scanToast.msg}
-            </div>
-          )}
-        </div>
-        {scannedPatient && (
-          <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-            <h3 className="font-semibold text-[#1e3a5f] mb-3">Scanned Patient Details</h3>
-            <div className="grid sm:grid-cols-2 gap-3 text-sm">
-              <div><span className="text-gray-500">Name:</span> <strong>{scannedPatient.name}</strong></div>
-              <div><span className="text-gray-500">ABHA ID:</span> <strong>{scannedPatient.abhaId}</strong></div>
-              <div><span className="text-gray-500">Blood Group:</span> <strong className="text-red-600">{scannedPatient.blood}</strong></div>
-              <div><span className="text-gray-500">Condition:</span> <strong>{scannedPatient.condition}</strong></div>
-              <div>
-                <span className="text-gray-500">Allergies:</span>{' '}
-                {scannedPatient.allergies?.length ? scannedPatient.allergies.map(a => (
-                  <span key={a} className="inline-block bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full mr-1">{a}</span>
-                )) : <span className="text-green-600 text-xs">None</span>}
-              </div>
-              {scannedPatient.vitals && (
-                <div><span className="text-gray-500">BP:</span> <strong>{scannedPatient.vitals.bp}</strong> · <span className="text-gray-500">HR:</span> <strong>{scannedPatient.vitals.hr}</strong> · <span className="text-gray-500">SpO₂:</span> <strong>{scannedPatient.vitals.spo2}%</strong></div>
-              )}
-            </div>
-          </div>
-        )}
+        <QRScanner user={user} onPatientScanned={(patient) => setScannedPatient(patient)} />
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">
