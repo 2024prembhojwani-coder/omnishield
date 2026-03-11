@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import { api } from '../utils/api.js';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-
-export default function QRScanner({ user, onPatientScanned }) {
+export default function QRScanner({ onPatientScanned }) {
+  const { user } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [scannedPatient, setScannedPatient] = useState(null);
   const [error, setError] = useState('');
@@ -52,7 +53,15 @@ export default function QRScanner({ user, onPatientScanned }) {
     setError('');
 
     try {
-      const data = JSON.parse(decodedText);
+      let data;
+      try {
+        data = JSON.parse(decodedText);
+      } catch (_) {
+        setError('Invalid QR code. Could not parse data.');
+        setLoading(false);
+        return;
+      }
+
       if (data.type !== 'OMNISHIELD_PATIENT') {
         setError('Invalid QR code. Not an OmniShield patient QR.');
         setLoading(false);
@@ -70,19 +79,12 @@ export default function QRScanner({ user, onPatientScanned }) {
         });
       }
 
-      const res = await fetch(`${API_URL}/api/patients/scan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          patientId: data.patientId,
-          scannedBy: user?.name || user?.id || 'Unknown',
-          timestamp: new Date().toISOString(),
-          geolocation,
-        }),
+      const result = await api.post('/patients/scan', {
+        patientId: data.patientId,
+        scannedBy: user?.name || user?.id || 'Unknown',
+        timestamp: new Date().toISOString(),
+        geolocation,
       });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.message || 'Scan failed');
 
       setScannedPatient(result.patient);
       if (onPatientScanned) onPatientScanned(result.patient);
