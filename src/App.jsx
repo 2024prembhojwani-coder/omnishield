@@ -44,6 +44,9 @@ import SecurityCenter from './components/security/SecurityCenter.jsx'
 // Business
 import BusinessModelPage from './components/business/BusinessModelPage.jsx'
 
+// QR Scanner
+import QRScanner from './components/QRScanner.jsx'
+
 function ProtectedPage({ children }) {
   return (
     <ProtectedRoute>
@@ -75,6 +78,7 @@ export default function App() {
           <Route path="/cdss"         element={<ProtectedPage><SymptomChecker /></ProtectedPage>} />
           <Route path="/analytics"    element={<ProtectedPage><PopulationHealth /></ProtectedPage>} />
           <Route path="/security"     element={<ProtectedPage><SecurityCenter /></ProtectedPage>} />
+          <Route path="/scan-patient" element={<ProtectedPage><QRScanner /></ProtectedPage>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
